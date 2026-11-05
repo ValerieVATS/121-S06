@@ -19,14 +19,16 @@ import {
   dustPerSecond,
   generatorCost,
   generatorYield,
+  loadState,
   ownedCount,
+  saveState,
   strike,
   tick,
 } from "./game/state.ts";
 
 const app = document.querySelector<HTMLElement>("#app")!;
 
-const state = createInitialState();
+const state = loadState() ?? createInitialState();
 
 // --- DOM (built once, updated in place) ------------------------------------
 
@@ -135,3 +137,10 @@ function displayLoop() {
 
 displayLoop();
 setInterval(update, 250);
+
+// Auto-save every few seconds, and once more when the page goes away.
+setInterval(() => saveState(state), 5000);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") saveState(state);
+});
+globalThis.addEventListener("pagehide", () => saveState(state));

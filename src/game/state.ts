@@ -31,6 +31,53 @@ export function createInitialState(): GameState {
   };
 }
 
+// --- Persistence -------------------------------------------------------------
+// The forge outlives the session: state is saved to localStorage every few
+// seconds and on page hide. saveVersion lets a future change migrate old
+// saves instead of silently misreading them.
+
+const SAVE_KEY = "star-forge-save-v1";
+const saveVersion = 1;
+
+interface SaveData {
+  version: number;
+  stardust: number;
+  owned: Record<string, number>;
+  upgrades: Record<string, boolean>;
+}
+
+export function saveState(state: GameState): void {
+  const data: SaveData = {
+    version: saveVersion,
+    stardust: state.stardust,
+    owned: state.owned,
+    upgrades: state.upgrades,
+  };
+  try {
+    localStorage.setItem(SAVE_KEY, JSON.stringify(data));
+  } catch {
+    // Private-browsing quota errors etc. — playing without saves is fine.
+  }
+}
+
+/** Restore a saved forge, or null if there is none (or it is unreadable). */
+export function loadState(): GameState | null {
+  try {
+    const raw = localStorage.getItem(SAVE_KEY);
+    if (raw === null) return null;
+    const data = JSON.parse(raw) as SaveData;
+    if (data.version !== saveVersion) return null;
+    return {
+      stardust: data.stardust,
+      owned: data.owned ?? {},
+      upgrades: data.upgrades ?? {},
+      lastTick: performance.now(),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function ownedCount(state: GameState, def: GeneratorDef): number {
   return state.owned[def.id] ?? 0;
 }
