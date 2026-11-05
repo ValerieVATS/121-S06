@@ -10,12 +10,16 @@
  */
 
 import "./style.css";
-import { GENERATORS } from "./game/definitions.ts";
+import { GENERATORS, UPGRADES } from "./game/definitions.ts";
 import {
   buyGenerator,
+  buyUpgrade,
+  clickYield,
   createInitialState,
   dustPerSecond,
   generatorCost,
+  generatorYield,
+  ownedCount,
   strike,
   tick,
 } from "./game/state.ts";
@@ -48,32 +52,73 @@ const generatorButtons = GENERATORS.map((def) => {
   return { def, button };
 });
 
+// One button per one-time upgrade; hidden once purchased.
+const upgradeButtons = UPGRADES.map((def) => {
+  const button = document.createElement("button");
+  button.className = "buy upgrade";
+  button.addEventListener("click", () => buyUpgrade(state, def));
+  return { def, button };
+});
+
+const generatorSection = document.createElement("h2");
+generatorSection.textContent = "Machines";
+
+const upgradeSection = document.createElement("h2");
+upgradeSection.textContent = "Research";
+
 app.append(
   heading,
   stardustDisplay,
   rateDisplay,
   forgeButton,
+  generatorSection,
   ...generatorButtons.map((g) => g.button),
+  upgradeSection,
+  ...upgradeButtons.map((u) => u.button),
 );
 
-// --- Main loop -------------------------------------------------------------
+// --- Main loop ---------------------------------------------------------------
+// The simulation is driven by both a display-rate loop (rAF) and a timer
+// that keeps firing when the tab is hidden — or never paints at all, as in
+// embedded or automated browsers. Because tick() consumes real elapsed
+// time, double-driving is harmless: each tick covers the interval since
+// the previous one, so production depends only on wall-clock time.
 
 let lastShownStardust = -1;
 
-function frame() {
+function update() {
   tick(state, performance.now());
 
-  rateDisplay.textContent = `${
-    dustPerSecond(state)
-  } stardust / second (surface winds + generators)`;
+  const perClick = clickYield(state);
+  forgeButton.textContent = perClick === 1
+    ? "Strike the star"
+    : `Strike the star (+${perClick} per strike)`;
 
   for (const { def, button } of generatorButtons) {
     const cost = generatorCost(state, def);
-    button.textContent =
-      `${def.name} (+${def.dustPerSecond}/sec) — ${cost} stardust`;
+    const count = ownedCount(state, def);
+    const yieldPerUnit = generatorYield(state, def);
+    button.textContent = count > 0
+      ? `${def.name} ×${count} (+${yieldPerUnit}/sec each) — ${cost} stardust`
+      : `${def.name} (+${yieldPerUnit}/sec) — ${cost} stardust`;
     button.title = def.flavor;
     button.disabled = state.stardust < cost;
   }
+
+  for (const { def, button } of upgradeButtons) {
+    if (state.upgrades[def.id]) {
+      button.hidden = true;
+      continue;
+    }
+    button.hidden = false;
+    button.textContent = `${def.name} — ${def.cost} stardust`;
+    button.title = def.flavor;
+    button.disabled = state.stardust < def.cost;
+  }
+
+  rateDisplay.textContent = `${
+    dustPerSecond(state)
+  } stardust / second (surface winds + machines)`;
 
   // Skip the text write when the floored value has not changed.
   const floored = Math.floor(state.stardust);
@@ -81,8 +126,12 @@ function frame() {
     stardustDisplay.textContent = `${floored} stardust`;
     lastShownStardust = floored;
   }
-
-  requestAnimationFrame(frame);
 }
 
-requestAnimationFrame(frame);
+function displayLoop() {
+  update();
+  requestAnimationFrame(displayLoop);
+}
+
+displayLoop();
+setInterval(update, 250);

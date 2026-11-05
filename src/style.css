@@ -62,3 +62,22 @@ h1 {
   opacity: 0.45;
   cursor: not-allowed;
 }
+
+/* The hidden attribute loses to any author display rule, so re-assert it. */
+.buy[hidden] {
+  display: none;
+}
+
+h2 {
+  margin: 1.75rem 0 0.5rem;
+  font-size: 0.85rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #a894d8;
+}
+
+.upgrade {
+  border-color: #4aa39a;
+  background: #0f2b2d;
+  color: #b8e8df;
+}
