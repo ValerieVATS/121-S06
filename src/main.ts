@@ -19,6 +19,10 @@ const state = {
   // Stardust per second shed by the star's surface winds. The player does
   // not control this yet — it exists so time itself is part of the loop.
   dustPerSecond: 0.5,
+  // Fusion furnaces the player has ignited; each fuses +1 stardust/sec.
+  furnaces: 0,
+  // Cost of the next furnace, in stardust. Grows 15% per furnace bought.
+  furnaceCost: 10,
   // Timestamp of the last simulation tick, from performance.now().
   lastTick: performance.now(),
 };
@@ -36,6 +40,16 @@ const rateDisplay = document.createElement("p");
 rateDisplay.className = "rate";
 rateDisplay.textContent = "0.5 stardust / second (surface winds)";
 
+const furnaceButton = document.createElement("button");
+furnaceButton.className = "buy";
+furnaceButton.addEventListener("click", () => {
+  if (state.stardust < state.furnaceCost) return;
+  state.stardust -= state.furnaceCost;
+  state.furnaces += 1;
+  state.dustPerSecond += 1;
+  state.furnaceCost = Math.ceil(state.furnaceCost * 1.15);
+});
+
 const forgeButton = document.createElement("button");
 forgeButton.className = "forge";
 forgeButton.textContent = "Strike the star";
@@ -43,7 +57,7 @@ forgeButton.addEventListener("click", () => {
   state.stardust += 1;
 });
 
-app.append(heading, stardustDisplay, rateDisplay, forgeButton);
+app.append(heading, stardustDisplay, rateDisplay, forgeButton, furnaceButton);
 
 // --- Simulation --------------------------------------------------------------
 // One tick advances the simulation by however much time actually elapsed.
@@ -66,6 +80,14 @@ let lastStardust = -1;
 
 function frame() {
   tick();
+  furnaceButton.textContent =
+    `Ignite fusion furnace (+1/sec) — ${state.furnaceCost} stardust`;
+  furnaceButton.disabled = state.stardust < state.furnaceCost;
+  const label = state.furnaces > 0
+    ? `, ${state.furnaces} furnace${state.furnaces === 1 ? "" : "s"}`
+    : "";
+  rateDisplay.textContent =
+    `${state.dustPerSecond} stardust / second (surface winds${label})`;
   if (state.stardust !== lastStardust) {
     stardustDisplay.textContent = `${Math.floor(state.stardust)} stardust`;
     lastStardust = state.stardust;

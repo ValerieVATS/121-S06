@@ -45,3 +45,20 @@ h1 {
 .forge:active {
   transform: scale(0.95);
 }
+
+.buy {
+  display: block;
+  margin: 0.75rem auto 0;
+  padding: 0.6rem 1.25rem;
+  font-size: 0.95rem;
+  border-radius: 8px;
+  border: 1px solid #7c6bb0;
+  background: #241a44;
+  color: #d8ccf5;
+  cursor: pointer;
+}
+
+.buy:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
