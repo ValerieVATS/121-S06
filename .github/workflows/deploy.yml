@@ -9,9 +9,6 @@ permissions:
   contents: read
   pages: write
   id-token: write
-  # Lets the workflow turn on Pages itself on first deploy; without this the
-  # Setup Pages step fails until someone flips the setting by hand.
-  administration: write
 
 concurrency:
   group: "pages"
